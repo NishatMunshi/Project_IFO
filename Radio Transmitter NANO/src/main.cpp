@@ -2,9 +2,9 @@
 #include <SPI.h>
 
 // global variables
-constexpr uint8_t CSN = 10, CE = 9; // this way pins 9 through 13 are used for SPI communication with the radio transmitter
+constexpr uint8_t CSN = 10, CE = 9, AUTOPILOT_INPUT = 8; // this way pins 9 through 13 are used for SPI communication with the radio transmitter
 constexpr uint8_t PAYLOAD_LENGTH = 12;
-uint16_t throttle, roll, pitch, yaw, camera, autopilot;
+uint16_t throttle, roll, pitch, yaw, camera, autopilot = 0;
 uint8_t array[PAYLOAD_LENGTH];
 
 uint32_t timer_i, timer_f;
@@ -99,7 +99,7 @@ void setup()
 	pinMode(CE, OUTPUT);
 	digitalWrite(CE, LOW);
 
-	pinMode(8, INPUT);
+	pinMode(AUTOPILOT_INPUT, INPUT);
 
 	// set the SPI settings
 	SPI.beginTransaction(SPISettings(8000000, MSBFIRST, SPI_MODE0));
@@ -129,7 +129,7 @@ void loop()
 {
 	// timer_i = micros();
 
-	// resuse last transmitted data packet until I do the calculations 
+	// resuse last transmitted data packet until I do the calculations
 	PORTB and_eq 0b11111011;
 	SPI.transfer(SPI_Commands::REUSE_TX_PL);
 	PORTB or_eq 0b00000100;
@@ -145,11 +145,11 @@ void loop()
 	// -------------------------------------- 564 microseconds
 
 	// map the values into pulsewidth,
-	throttle = throttle * 1.8142717497556207 + 544;
-	roll = roll * 1.8142717497556207 + 544;
-	pitch = pitch * 1.8142717497556207 + 544;
-	yaw = yaw * 1.8142717497556207 + 544;
-	camera = camera * 1.8142717497556207 + 544; // 1500 us pulse is the centre position of a servo.
+	throttle = throttle * 0.977517106549365 + 1000;
+	roll = roll * 0.977517106549365 + 1000;
+	pitch = pitch * 0.977517106549365 + 1000;
+	yaw = yaw * 0.977517106549365 + 1000;
+	camera = camera * 0.977517106549365 + 1000; // 1500 us pulse is the centre position of a servo.
 	// -------------------------------------- 120 microseconds
 
 	// process the data into 12 byte array
@@ -191,4 +191,4 @@ void loop()
 	// Serial.println(timer_f-timer_i);
 
 	// PORTD or_eq ((value bitand 0x10) << 0); // checking if tx fifo is empty before filling it
-}
+}  
