@@ -2,6 +2,7 @@
 #include <nRF24L01.hpp>
 #include <MPU_6050.hpp>
 
+constexpr uint32_t REFRESH_RATE = 3496; /// 3500 -4
 byte array[12];
 uint16_t throttle, roll, pitch, yaw, camera, autopilot;                   // receiver inputs
 int16_t gyro_roll, gyro_pitch, gyro_yaw, accl_roll, accl_pitch, accl_yaw; // sensor inputs
@@ -27,13 +28,13 @@ void setup()
 
 void loop()
 {
-    // this loop ensures a steady 4000 us refresh rate
-    for (elapsed_time = 0; elapsed_time < 3500; elapsed_time = micros() - loop_timer) // 3500 us corresponding to the refresh rate of the flight controller; subject to
-    {                                                                                 // change according to the performance needs.
-        __asm__ __volatile__("nop\n\t");                                              // do nothing in the refresh period, nop is used to remove compiler optimisation
+    // this loop ensures a steady refresh rate
+    for (elapsed_time = 0; elapsed_time < REFRESH_RATE; elapsed_time = micros() - loop_timer) // corresponding to the refresh rate of the flight controller; subject to
+    {                                                                                         // change according to the performance needs.
+        __asm__ __volatile__("nop\n\t");                                                      // do nothing in the refresh period, nop is used to remove compiler optimisation
     }
 
-    PORTD or_eq 0b11110000;                                                                   // pull the pins that execute PWM high
+    PORTD or_eq 0b11110000;                  // pull the pins that execute PWM high
     loop_timer = micros(), elapsed_time = 0; // start the timer
 
     // reading the receiver inputs ( about 36 us)
@@ -77,7 +78,7 @@ void loop()
         if (not(PORTD bitand 0b11110000))
             break; // when all 4 pulses have finished, break out of the loop
     }
-    // ------------------------------------------------- 
+    // -------------------------------------------------
 
     // -------------------------------------------------
 
@@ -94,8 +95,4 @@ void loop()
     PW_motor_3 = yaw;
 
     // -------------------------------------------------
-
-
-
-    // Serial.println(micros() - timer);
 }
