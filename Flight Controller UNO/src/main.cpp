@@ -27,7 +27,14 @@ void setup()
 
 void loop()
 {
-    // unsigned long timer = micros();
+    // this loop ensures a steady 4000 us refresh rate
+    for (elapsed_time = 0; elapsed_time < 3500; elapsed_time = micros() - loop_timer) // 3500 us corresponding to the refresh rate of the flight controller; subject to
+    {                                                                                 // change according to the performance needs.
+        __asm__ __volatile__("nop\n\t");                                              // do nothing in the refresh period, nop is used to remove compiler optimisation
+    }
+
+    PORTD or_eq 0b11110000;                                                                   // pull the pins that execute PWM high
+    loop_timer = micros(), elapsed_time = 0; // start the timer
 
     // reading the receiver inputs ( about 36 us)
     receiver.read_rx_payload(array);
@@ -55,6 +62,23 @@ void loop()
     MPU.get_accl_data(accl_roll, accl_pitch, accl_yaw);
     // -------------------------------------------------
 
+    // one PWM pulse for each motor
+    for (; true; elapsed_time = micros() - loop_timer) // we reinitiate the loop timer at the instant PWM pins go high
+    {
+        if (elapsed_time >= PW_motor_0)
+            PORTD and_eq 0b11101111; // assuming motor 0 on pin D4
+        if (elapsed_time >= PW_motor_1)
+            PORTD and_eq 0b11011111; // assuming motor 1 on pin D5
+        if (elapsed_time >= PW_motor_2)
+            PORTD and_eq 0b10111111; // assuming motor 2 on pin D6
+        if (elapsed_time >= PW_motor_3)
+            PORTD and_eq 0b01111111; // assuming motor 3 on pin D7
+
+        if (not(PORTD bitand 0b11110000))
+            break; // when all 4 pulses have finished, break out of the loop
+    }
+    // ------------------------------------------------- 
+
     // -------------------------------------------------
 
     // PID SECTION
@@ -71,29 +95,7 @@ void loop()
 
     // -------------------------------------------------
 
-    // this loop ensures a steady 4000 us refresh rate
-    for (elapsed_time = 0; elapsed_time < 4000; elapsed_time = micros() - loop_timer) // 4000 us corresponding to the refresh rate of the flight controller; subject to
-    {                                                                                 // change according to the performance needs.
-        __asm__ __volatile__("nop\n\t");                                              // do nothing in the refresh period, nop is used to remove compiler optimisation
-    }
 
-    // one PWM pulse for each motor
-    PORTD or_eq 0b11110000;                                                                   // pull the pins that execute PWM high
-    for (loop_timer = micros(), elapsed_time = 0; true; elapsed_time = micros() - loop_timer) // we reinitiate the loop timer at the instant PWM pins go high
-    {
-        if (elapsed_time >= PW_motor_0)
-            PORTD and_eq 0b11101111; // assuming motor 0 on pin D4
-        if (elapsed_time >= PW_motor_1)
-            PORTD and_eq 0b11011111; // assuming motor 1 on pin D5
-        if (elapsed_time >= PW_motor_2)
-            PORTD and_eq 0b10111111; // assuming motor 2 on pin D6
-        if (elapsed_time >= PW_motor_3)
-            PORTD and_eq 0b01111111; // assuming motor 3 on pin D7
-
-        if (not(PORTD bitand 0b11110000))
-            break; // when all 4 pulses have finished, break out of the loop
-    }
-    // ------------------------------------------------- 
 
     // Serial.println(micros() - timer);
 }
