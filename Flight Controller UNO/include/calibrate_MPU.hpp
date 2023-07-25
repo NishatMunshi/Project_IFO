@@ -24,25 +24,20 @@ void calibrate_gyro(void)
     gyro_roll = tempX / 10000;
     gyro_pitch = tempY / 10000;
     gyro_yaw = tempZ / 10000;
-    EEPROM.write(0, gyro_roll bitand 0xff00);
+    EEPROM.write(0, gyro_roll >> 8);
     EEPROM.write(1, gyro_roll bitand 0x00ff);
-    EEPROM.write(2, gyro_pitch bitand 0xff00);
+    EEPROM.write(2, gyro_pitch >> 8);
     EEPROM.write(3, gyro_pitch bitand 0x00ff);
-    EEPROM.write(4, gyro_yaw bitand 0xff00);
+    EEPROM.write(4, gyro_yaw >> 8);
     EEPROM.write(5, gyro_yaw bitand 0x00ff);
 
     // print the calibration results
-    Serial.print(EEPROM.read(0));
+    Serial.print(gyro_roll);
     Serial.print(' ');
-    Serial.print(EEPROM.read(1));
+    Serial.print(gyro_pitch);
     Serial.print(' ');
-    Serial.print(EEPROM.read(2));
-    Serial.print(' ');
-    Serial.print(EEPROM.read(3));
-    Serial.print(' ');
-    Serial.print(EEPROM.read(4));
-    Serial.print(' ');
-    Serial.println(EEPROM.read(5));
+    Serial.print(gyro_yaw);
+    Serial.println();
 
     Serial.end();
 }
@@ -67,25 +62,20 @@ void calibrate_accl(void)
     accl_roll = tempX / 10000;
     accl_pitch = tempY / 10000;
     accl_yaw = tempZ / 10000;
-    EEPROM.write(6, accl_roll bitand 0xff00);
+    EEPROM.write(6, accl_roll >> 8);
     EEPROM.write(7, accl_roll bitand 0x00ff);
-    EEPROM.write(8, accl_pitch bitand 0xff00);
+    EEPROM.write(8, accl_pitch >> 8);
     EEPROM.write(9, accl_pitch bitand 0x00ff);
-    EEPROM.write(10, accl_yaw bitand 0xff00);
+    EEPROM.write(10, accl_yaw >> 8);
     EEPROM.write(11, accl_yaw bitand 0x00ff);
 
     // print the calibration results
-    Serial.print(EEPROM.read(6));
+    Serial.print(accl_roll);
     Serial.print(' ');
-    Serial.print(EEPROM.read(7));
+    Serial.print(accl_pitch);
     Serial.print(' ');
-    Serial.print(EEPROM.read(8));
-    Serial.print(' ');
-    Serial.print(EEPROM.read(9));
-    Serial.print(' ');
-    Serial.print(EEPROM.read(10));
-    Serial.print(' ');
-    Serial.println(EEPROM.read(11));
+    Serial.print(accl_yaw);
+    Serial.println();
 
     Serial.end();
 }

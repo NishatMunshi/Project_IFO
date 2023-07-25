@@ -5,10 +5,9 @@
 class MPU_6050
 {
 private:
+    const byte MPU_ADDR = 0x68;
     enum Registers : byte
     {
-
-        MPU_ADDR = 0x68,
         PWR_MGMT_1 = 0x6b,
         GYRO_CONFIG = 0x1b,
         ACCL_CONFIG = 0x1c,
@@ -44,12 +43,13 @@ public: // gyro
         Wire.endTransmission();
 
         Wire.requestFrom(MPU_ADDR, 6);
-        gyro_roll = Wire.read() << 8 bitor Wire.read();
-        gyro_pitch = Wire.read() << 8 bitor Wire.read();
-        gyro_yaw = Wire.read() << 8 bitor Wire.read();
+        gyro_roll = (Wire.read() << 8) bitor Wire.read();
+        gyro_pitch = (Wire.read() << 8) bitor Wire.read();
+        gyro_yaw = (Wire.read() << 8) bitor Wire.read();
     }
 
 public: // accl
+    // 0 for 2g, 1 for 4g, 2 for 8g, 3 for 16g
     void setup_accl(const uint8_t _fullScaleRange)
     {
         Wire.beginTransmission(MPU_ADDR);
@@ -65,9 +65,9 @@ public: // accl
         Wire.endTransmission();
 
         Wire.requestFrom(MPU_ADDR, 6);
-        accl_roll = Wire.read() << 8 bitor Wire.read();
-        accl_pitch = Wire.read() << 8 bitor Wire.read();
-        accl_yaw = Wire.read() << 8 bitor Wire.read();
+        accl_roll = (Wire.read() << 8) bitor Wire.read();
+        accl_pitch = (Wire.read() << 8) bitor Wire.read();
+        accl_yaw = (Wire.read() << 8) bitor Wire.read();
     }
 };
 

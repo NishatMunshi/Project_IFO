@@ -1,11 +1,18 @@
 #include <Arduino.h>
+#include <EEPROM.h>
 #include <nRF24L01.hpp>
 #include <MPU_6050.hpp>
+#include <calibrate_MPU.hpp>
+
+#if false
+#define CALIBRATE
+#endif
 
 constexpr uint32_t REFRESH_RATE = 3496; /// 3500 -4
 byte array[12];
-uint16_t throttle, roll, pitch, yaw, camera, autopilot;                   // receiver inputs
-int16_t gyro_roll, gyro_pitch, gyro_yaw, accl_roll, accl_pitch, accl_yaw; // sensor inputs
+uint16_t throttle, roll, pitch, yaw, camera, autopilot;                                                                                     // receiver inputs
+int16_t gyro_roll, gyro_pitch, gyro_yaw, accl_roll, accl_pitch, accl_yaw;                                                                   // sensor inputs
+int16_t gyro_roll_zero_error, gyro_pitch_zero_error, gyro_yaw_zero_error, accl_roll_zero_error, accl_pitch_zero_error, accl_yaw_zero_error; // zero errors
 
 uint16_t PW_motor_0, PW_motor_1, PW_motor_2, PW_motor_3; // final motor pulse widths
 
@@ -13,21 +20,38 @@ uint32_t loop_timer, elapsed_time; // two timers to take care of the timing and 
 
 void setup()
 {
+#ifdef CALIBRATE
+    calibrate_gyro();
+    calibrate_accl();
+#endif
+
+#ifndef CALIBRATE
     // reset and setup the gyro and accl
     Wire.begin();
     MPU.reset();
     MPU.setup_gyro(3);
     MPU.setup_accl(3);
 
+    // Read the zero errors from EEPROM
+    gyro_roll_zero_error = (EEPROM.read(0) << 8) bitor EEPROM.read(1);
+    gyro_pitch_zero_error = (EEPROM.read(2) << 8) bitor EEPROM.read(3);
+    gyro_yaw_zero_error = (EEPROM.read(4) << 8) bitor EEPROM.read(5);
+
+    accl_roll_zero_error = (EEPROM.read(6) << 8) bitor EEPROM.read(7);
+    accl_pitch_zero_error = (EEPROM.read(8) << 8) bitor EEPROM.read(9);
+    accl_yaw_zero_error = (EEPROM.read(10) << 8) bitor EEPROM.read(11);
+
     // set up the radio receiver with the correct settings.
     receiver.setup();
 
     // remove later section
     Serial.begin(9600);
+#endif
 }
 
 void loop()
 {
+#ifndef CALIBRATE
     // this loop ensures a steady refresh rate
     for (elapsed_time = 0; elapsed_time < REFRESH_RATE; elapsed_time = micros() - loop_timer) // corresponding to the refresh rate of the flight controller; subject to
     {                                                                                         // change according to the performance needs.
@@ -60,7 +84,14 @@ void loop()
 
     // reading the gyro and accl data (about 560 us)
     MPU.get_gyro_data(gyro_roll, gyro_pitch, gyro_yaw);
+    gyro_roll -= gyro_roll_zero_error;
+    gyro_pitch -= gyro_pitch_zero_error;
+    gyro_yaw -= gyro_yaw_zero_error;
+
     MPU.get_accl_data(accl_roll, accl_pitch, accl_yaw);
+    accl_roll -= accl_roll_zero_error;
+    accl_pitch -= accl_pitch_zero_error;
+    accl_yaw -= accl_yaw_zero_error;
     // -------------------------------------------------
 
     // one PWM pulse for each motor
@@ -94,5 +125,6 @@ void loop()
     PW_motor_2 = pitch;
     PW_motor_3 = yaw;
 
-    // -------------------------------------------------
+// -------------------------------------------------
+#endif
 }

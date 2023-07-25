@@ -119,6 +119,15 @@ public:
         // payload length setup
         write_to_register(RX_PW_P0, PAYLOAD_LENGTH); // 12 byte payload length
 
+        // give the device a unique address 0xD6D6D6D6D6 (same as Transmitter)
+        digitalWrite(CSN, LOW);
+        SPI.transfer(W_REGISTER bitor TX_ADDR);
+        for (unsigned i = 0; i < 5; ++i)
+        {
+            SPI.transfer(0xD6);
+        }
+        digitalWrite(CSN, HIGH);
+
         // flush the rx fifo once
         command_SPI(FLUSH_RX);
 
