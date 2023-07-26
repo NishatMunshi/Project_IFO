@@ -5,12 +5,14 @@
 #include <calibrate_MPU.hpp>
 
 #if false
-#define CALIBRATE
+#define __CALIBRATE__
 #endif
 
-constexpr uint32_t REFRESH_RATE = 3496; /// 3500 -4
+constexpr uint32_t REFRESH_RATE = 3496; // 3500 - 4
+
 byte array[12];
-uint16_t throttle, roll, pitch, yaw, camera, autopilot;                                                          // receiver inputs
+uint16_t throttle, roll, pitch, yaw, camera, autopilot; // receiver inputs
+
 int16_t gyro_roll, gyro_pitch, gyro_yaw, accel_roll, accel_pitch, accel_yaw;                                     // sensor inputs
 int16_t gyro_roll_calib, gyro_pitch_calib, gyro_yaw_calib, accel_roll_calib, accel_pitch_calib, accel_yaw_calib; // zero errors
 
@@ -20,13 +22,15 @@ uint32_t loop_timer, elapsed_time; // two timers to take care of the timing and 
 
 void setup()
 {
-#ifdef CALIBRATE
-    Wire.begin();
+#ifdef __CALIBRATE__
     calibrate_gyro();
     calibrate_accl();
 #endif
 
-#ifndef CALIBRATE
+#ifndef __CALIBRATE__
+    // set up the radio receiver with the correct settings.
+    receiver.setup();
+
     // reset and setup the gyro and accl
     MPU.setup();
 
@@ -39,9 +43,6 @@ void setup()
     gyro_pitch_calib = (EEPROM.read(8) << 8) bitor EEPROM.read(9);
     gyro_yaw_calib = (EEPROM.read(10) << 8) bitor EEPROM.read(11);
 
-    // set up the radio receiver with the correct settings.
-    receiver.setup();
-
     // remove later section
     Serial.begin(9600);
 #endif
@@ -49,20 +50,22 @@ void setup()
 
 void loop()
 {
-#ifndef CALIBRATE
+#ifndef __CALIBRATE__
     // this loop ensures a steady refresh rate
     for (elapsed_time = 0; elapsed_time < REFRESH_RATE; elapsed_time = micros() - loop_timer) // corresponding to the refresh rate of the flight controller; subject to
     {                                                                                         // change according to the performance needs.
-                                                                                              // __asm__ __volatile__("nop\n\t");                                                      // do nothing in the refresh period, nop is used to remove compiler optimisation
+        __asm__ __volatile__("nop\n\t");                                                      // do nothing in the refresh period, nop is used to remove compiler
+                                                                                              // optimisation
     }
 
     PORTD or_eq 0b11110000;                  // pull the pins that execute PWM high
     loop_timer = micros(), elapsed_time = 0; // start the timer
 
-    // reading the receiver inputs ( about 36 us)
-    receiver.read_rx_payload(array);
+    // unsigned long timer = micros();
 
-    // decompose the array into 6 channels and save it ( less than 4 us)
+    // reading the receiver inputs ( about 40 us)
+    receiver.read_rx_payload(array);
+    // decompose the array into 6 channels and save it
     // throttle, roll, pitch, yaw, camera, autopilot
     // array[0] = autopilot least significant byte
     // array[1] = autopilot most significant byte
@@ -80,7 +83,7 @@ void loop()
     throttle = array[10] bitor (throttle << 8);
     // -------------------------------------------------
 
-    unsigned long timer = micros();
+    // timer = micros() - timer;
 
     // reading the gyro and accl data (about 384 us)
     MPU.read_accel_data(accel_roll, accel_pitch, accel_yaw);
@@ -93,9 +96,8 @@ void loop()
     gyro_yaw -= gyro_yaw_calib;
     gyro_pitch -= gyro_pitch_calib;
     // -------------------------------------------------
-    timer = micros() - timer;
 
-    // one PWM pulse for each motor
+    // one PWM pulse FALLING EDGE for each motor
     for (; true; elapsed_time = micros() - loop_timer) // we reinitiate the loop timer at the instant PWM pins go high
     {
         if (elapsed_time >= PW_motor_0)
@@ -127,6 +129,6 @@ void loop()
     PW_motor_3 = yaw;
 
     // -------------------------------------------------
-    Serial.println(timer);
+    // Serial.println(micros());
 #endif
 }
