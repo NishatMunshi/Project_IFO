@@ -12,7 +12,7 @@ void calibrate_accel(void)
     int16_t accel_roll, accel_pitch, accel_yaw;
     int32_t tempX = 0, tempY = 0, tempZ = 0;
 
-    Serial.println("Taking Samples ... Don't move the accl");
+    Serial.println("Taking Samples ... Don't move the accelerometer");
     for (unsigned count = 0u; count < NUMBER_OF_SAMPLES; ++count)
     {
         MPU.read_accel_data(accel_roll, accel_pitch, accel_yaw);
@@ -42,7 +42,7 @@ void calibrate_accel(void)
     Serial.print(accel_pitch);
     Serial.print(' ');
     Serial.print(accel_yaw);
-    Serial.println();
+    Serial.println("**************************************");
 
     Serial.end();
 }
@@ -54,7 +54,7 @@ void calibrate_gyro(void)
     int16_t gyro_roll, gyro_pitch, gyro_yaw;
     int32_t tempX = 0, tempY = 0, tempZ = 0;
 
-    Serial.println("Taking Samples ... Don't move the gyro");
+    Serial.println("Taking Samples ... Don't move the gyroscope");
     for (unsigned count = 0u; count < NUMBER_OF_SAMPLES; ++count)
     {
         MPU.read_gyro_data(gyro_roll, gyro_pitch, gyro_yaw);
@@ -84,7 +84,7 @@ void calibrate_gyro(void)
     Serial.print(gyro_pitch);
     Serial.print(' ');
     Serial.print(gyro_yaw);
-    Serial.println();
+    Serial.println("**************************************");
 
     Serial.end();
 }
