@@ -27,9 +27,7 @@ void setup()
 #ifdef __CALIBRATE__
     calibrate_gyro();
     calibrate_accl();
-#endif
-
-#ifndef __CALIBRATE__
+#else
     // set up the radio receiver with the correct settings.
     receiver.setup();
 
