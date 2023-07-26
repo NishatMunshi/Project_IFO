@@ -2,12 +2,18 @@
 #include <Arduino.h>
 #include <SPI.h>
 
+struct receiver_output
+{
+    uint16_t throttle, roll, pitch, yaw, camera;
+    bool autopilot;
+};
 class nRF24L01
 {
 public:
     const byte PAYLOAD_LENGTH = 12;
 
 private:
+    byte array[12];
     const byte CSN = 10, CE = 9; // pins 9 through 13 are used for SPI communication with the radio receiver
 
 private:
@@ -137,7 +143,7 @@ public:
         digitalWrite(CE, HIGH);
     }
 
-    inline void read_rx_payload(byte *array)
+    inline void read_rx_payload(receiver_output &_receiverData)
     {
         PORTB and_eq 0b11111011;
         SPI.transfer(SPI_Commands::R_RX_PAYLOAD);
@@ -146,7 +152,29 @@ public:
             array[i] = SPI.transfer(SPI_Commands::NOP);
         }
         PORTB or_eq 0b00000100;
+
+        // decompose the array into 6 channels and save it
+        // throttle, roll, pitch, yaw, camera, autopilot
+        // array[0] = autopilot least significant byte
+        // array[1] = autopilot most significant byte
+        _receiverData.autopilot = array[1];
+        _receiverData.autopilot = array[0] bitor (_receiverData.autopilot << 8);
+        _receiverData.autopilot = _receiverData.autopilot ? true : false;
+
+        _receiverData.camera = array[3];
+        _receiverData.camera = array[2] bitor (_receiverData.camera << 8);
+
+        _receiverData.yaw = array[5];
+        _receiverData.yaw = array[4] bitor (_receiverData.yaw << 8);
+
+        _receiverData.pitch = array[7];
+        _receiverData.pitch = array[6] bitor (_receiverData.pitch << 8);
+
+        _receiverData.roll = array[9];
+        _receiverData.roll = array[8] bitor (_receiverData.roll << 8);
+        
+        _receiverData.throttle = array[11];
+        _receiverData.throttle = array[10] bitor (_receiverData.throttle << 8);
     }
 };
-
 nRF24L01 receiver;

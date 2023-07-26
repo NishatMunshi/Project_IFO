@@ -5,10 +5,22 @@
 struct gyro_output
 {
     int16_t roll, pitch, yaw;
+    void operator-=(const gyro_output &_other)
+    {
+        this->roll -= _other.roll;
+        this->pitch -= _other.pitch;
+        this->yaw -= _other.yaw;
+    }
 };
 struct accel_output
 {
     int16_t x, y, z;
+    void operator-=(const accel_output &_other)
+    {
+        this->x -= _other.x;
+        this->y -= _other.y;
+        this->z -= _other.z;
+    }
 };
 
 class MPU_6050

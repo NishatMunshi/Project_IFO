@@ -10,8 +10,7 @@
 
 constexpr uint32_t REFRESH_RATE = 3496; // 3500 - 4
 
-byte array[12];
-uint16_t throttle, roll, pitch, yaw, camera, autopilot; // receiver inputs
+receiver_output receiverData;
 
 accel_output accelData;
 gyro_output gyroData;
@@ -67,37 +66,17 @@ void loop()
     // unsigned long timer = micros();
 
     // reading the receiver inputs ( about 40 us)
-    receiver.read_rx_payload(array);
-    // decompose the array into 6 channels and save it
-    // throttle, roll, pitch, yaw, camera, autopilot
-    // array[0] = autopilot least significant byte
-    // array[1] = autopilot most significant byte
-    autopilot = array[1];
-    autopilot = array[0] bitor (autopilot << 8);
-    camera = array[3];
-    camera = array[2] bitor (camera << 8);
-    yaw = array[5];
-    yaw = array[4] bitor (yaw << 8);
-    pitch = array[7];
-    pitch = array[6] bitor (pitch << 8);
-    roll = array[9];
-    roll = array[8] bitor (roll << 8);
-    throttle = array[11];
-    throttle = array[10] bitor (throttle << 8);
+    receiver.read_rx_payload(receiverData);
     // -------------------------------------------------
 
     // timer = micros() - timer;
 
-    // reading the gyro and accl data (about 384 us)
+    // reading the gyro and accl data and subtracting the offsets (about 384 us)
     MPU.read_accel_data(accelData);
-    accelData.x -= accelCalibData.x;
-    accelData.y -= accelCalibData.y;
-    accelData.z -= accelCalibData.z;
+    accelData -= accelCalibData;
 
     MPU.read_gyro_data(gyroData);
-    gyroData.roll -= gyroCalibData.roll;
-    gyroData.pitch -= gyroCalibData.pitch;
-    gyroData.yaw -= gyroCalibData.yaw;
+    gyroData -= gyroCalibData;
     // -------------------------------------------------
 
     // one PWM pulse FALLING EDGE for each motor
@@ -126,10 +105,10 @@ void loop()
     // Pulse Width calculation section
 
     // MODIFY later
-    PW_motor_0 = roll;
-    PW_motor_1 = pitch;
-    PW_motor_2 = roll;
-    PW_motor_3 = roll;
+    PW_motor_0 = receiverData.roll;
+    PW_motor_1 = receiverData.pitch;
+    PW_motor_2 = 1000;
+    PW_motor_3 = 1000;
 
     // -------------------------------------------------
     // Serial.println(micros());
