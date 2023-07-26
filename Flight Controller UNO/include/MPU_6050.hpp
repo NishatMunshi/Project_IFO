@@ -2,6 +2,15 @@
 #include <Wire.h>
 #include <Arduino.h>
 
+struct gyro_output
+{
+    int16_t roll, pitch, yaw;
+};
+struct accel_output
+{
+    int16_t x, y, z;
+};
+
 class MPU_6050
 {
 private:
@@ -39,7 +48,7 @@ public:
     }
 
 public:
-    void read_accel_data(int16_t &accel_roll, int16_t &accel_pitch, int16_t &accel_yaw)
+    void read_accel_data(accel_output &_accelData)
     {
         Wire.beginTransmission(MPU_ADDR);
         Wire.write(ACCEL_XOUT_H);
@@ -49,19 +58,19 @@ public:
 
         highByte = Wire.read();
         lowByte = Wire.read();
-        accel_roll = (highByte << 8) bitor lowByte;
+        _accelData.x = (highByte << 8) bitor lowByte;
 
         highByte = Wire.read();
         lowByte = Wire.read();
-        accel_pitch = (highByte << 8) bitor lowByte;
+        _accelData.y = (highByte << 8) bitor lowByte;
 
         highByte = Wire.read();
         lowByte = Wire.read();
-        accel_yaw = (highByte << 8) bitor lowByte;
+        _accelData.z = (highByte << 8) bitor lowByte;
     }
 
 public:
-    void read_gyro_data(int16_t &gyro_roll, int16_t &gyro_pitch, int16_t &gyro_yaw)
+    void read_gyro_data(gyro_output &_gyroData)
     {
         Wire.beginTransmission(MPU_ADDR);
         Wire.write(GYRO_XOUT_H);
@@ -71,15 +80,15 @@ public:
 
         highByte = Wire.read();
         lowByte = Wire.read();
-        gyro_roll = (highByte << 8) bitor lowByte;
+        _gyroData.roll = (highByte << 8) bitor lowByte;
 
         highByte = Wire.read();
         lowByte = Wire.read();
-        gyro_pitch = (highByte << 8) bitor lowByte;
+        _gyroData.pitch = (highByte << 8) bitor lowByte;
 
         highByte = Wire.read();
         lowByte = Wire.read();
-        gyro_yaw = (highByte << 8) bitor lowByte;
+        _gyroData.yaw = (highByte << 8) bitor lowByte;
     }
 };
 

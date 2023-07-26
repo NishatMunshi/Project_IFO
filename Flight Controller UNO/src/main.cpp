@@ -13,8 +13,11 @@ constexpr uint32_t REFRESH_RATE = 3496; // 3500 - 4
 byte array[12];
 uint16_t throttle, roll, pitch, yaw, camera, autopilot; // receiver inputs
 
-int16_t gyro_roll, gyro_pitch, gyro_yaw, accel_roll, accel_pitch, accel_yaw;                                     // sensor inputs
-int16_t gyro_roll_calib, gyro_pitch_calib, gyro_yaw_calib, accel_roll_calib, accel_pitch_calib, accel_yaw_calib; // zero errors
+accel_output accelData;
+gyro_output gyroData;
+
+accel_output accelCalibData;
+gyro_output gyroCalibData;
 
 uint16_t PW_motor_0, PW_motor_1, PW_motor_2, PW_motor_3; // final motor pulse widths
 
@@ -35,13 +38,13 @@ void setup()
     MPU.setup();
 
     // Read the zero errors from EEPROM
-    accel_roll_calib = (EEPROM.read(0) << 8) bitor EEPROM.read(1);
-    accel_pitch_calib = (EEPROM.read(2) << 8) bitor EEPROM.read(3);
-    accel_yaw_calib = (EEPROM.read(4) << 8) bitor EEPROM.read(5);
+    accelCalibData.x = (EEPROM.read(0) << 8) bitor EEPROM.read(1);
+    accelCalibData.y = (EEPROM.read(2) << 8) bitor EEPROM.read(3);
+    accelCalibData.z = (EEPROM.read(4) << 8) bitor EEPROM.read(5);
 
-    gyro_roll_calib = (EEPROM.read(6) << 8) bitor EEPROM.read(7);
-    gyro_pitch_calib = (EEPROM.read(8) << 8) bitor EEPROM.read(9);
-    gyro_yaw_calib = (EEPROM.read(10) << 8) bitor EEPROM.read(11);
+    gyroCalibData.roll = (EEPROM.read(6) << 8) bitor EEPROM.read(7);
+    gyroCalibData.pitch = (EEPROM.read(8) << 8) bitor EEPROM.read(9);
+    gyroCalibData.yaw = (EEPROM.read(10) << 8) bitor EEPROM.read(11);
 
     // remove later section
     Serial.begin(9600);
@@ -86,15 +89,15 @@ void loop()
     // timer = micros() - timer;
 
     // reading the gyro and accl data (about 384 us)
-    MPU.read_accel_data(accel_roll, accel_pitch, accel_yaw);
-    accel_roll -= accel_roll_calib;
-    accel_pitch -= accel_pitch_calib;
-    accel_yaw -= accel_yaw_calib;
+    MPU.read_accel_data(accelData);
+    accelData.x -= accelCalibData.x;
+    accelData.y -= accelCalibData.y;
+    accelData.z -= accelCalibData.z;
 
-    MPU.read_gyro_data(gyro_roll, gyro_pitch, gyro_yaw);
-    gyro_roll -= gyro_roll_calib;
-    gyro_yaw -= gyro_yaw_calib;
-    gyro_pitch -= gyro_pitch_calib;
+    MPU.read_gyro_data(gyroData);
+    gyroData.roll -= gyroCalibData.roll;
+    gyroData.pitch -= gyroCalibData.pitch;
+    gyroData.yaw -= gyroCalibData.yaw;
     // -------------------------------------------------
 
     // one PWM pulse FALLING EDGE for each motor
@@ -123,10 +126,10 @@ void loop()
     // Pulse Width calculation section
 
     // MODIFY later
-    PW_motor_0 = throttle;
-    PW_motor_1 = roll;
-    PW_motor_2 = pitch;
-    PW_motor_3 = yaw;
+    PW_motor_0 = roll;
+    PW_motor_1 = pitch;
+    PW_motor_2 = roll;
+    PW_motor_3 = roll;
 
     // -------------------------------------------------
     // Serial.println(micros());

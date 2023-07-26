@@ -9,39 +9,40 @@ void calibrate_accel(void)
 {
     MPU.setup();
     Serial.begin(9600);
-    int16_t accel_roll, accel_pitch, accel_yaw;
+    
+    accel_output accelData;
     int32_t tempX = 0, tempY = 0, tempZ = 0;
 
     Serial.println("Taking Samples ... Don't move the accelerometer");
     for (unsigned count = 0u; count < NUMBER_OF_SAMPLES; ++count)
     {
-        MPU.read_accel_data(accel_roll, accel_pitch, accel_yaw);
+        MPU.read_accel_data(accelData);
 
-        tempX += accel_roll;
-        tempY += accel_pitch;
-        tempZ += accel_yaw;
+        tempX += accelData.x;
+        tempY += accelData.y;
+        tempZ += accelData.z;
     }
     Serial.println("Calibration Complete.");
 
     // take the mean
-    accel_roll = tempX / NUMBER_OF_SAMPLES;
-    accel_pitch = tempY / NUMBER_OF_SAMPLES;
-    accel_yaw = tempZ / NUMBER_OF_SAMPLES;
+    accelData.x = tempX / NUMBER_OF_SAMPLES;
+    accelData.y = tempY / NUMBER_OF_SAMPLES;
+    accelData.z = tempZ / NUMBER_OF_SAMPLES;
 
     /// Write into EEPROM
-    EEPROM.write(0, accel_roll >> 8);
-    EEPROM.write(1, accel_roll bitand 0x00ff);
-    EEPROM.write(2, accel_pitch >> 8);
-    EEPROM.write(3, accel_pitch bitand 0x00ff);
-    EEPROM.write(4, accel_yaw >> 8);
-    EEPROM.write(5, accel_yaw bitand 0x00ff);
+    EEPROM.write(0, accelData.x >> 8);
+    EEPROM.write(1, accelData.x bitand 0x00ff);
+    EEPROM.write(2, accelData.y >> 8);
+    EEPROM.write(3, accelData.y bitand 0x00ff);
+    EEPROM.write(4, accelData.z >> 8);
+    EEPROM.write(5, accelData.z bitand 0x00ff);
 
     // print the calibration results
-    Serial.print(accel_roll);
+    Serial.print(accelData.x);
     Serial.print(' ');
-    Serial.print(accel_pitch);
+    Serial.print(accelData.y);
     Serial.print(' ');
-    Serial.print(accel_yaw);
+    Serial.print(accelData.z);
     Serial.println("**************************************");
 
     Serial.end();
@@ -51,39 +52,39 @@ void calibrate_gyro(void)
     MPU.setup();
     Serial.begin(9600);
 
-    int16_t gyro_roll, gyro_pitch, gyro_yaw;
+    gyro_output gyroData;
     int32_t tempX = 0, tempY = 0, tempZ = 0;
 
     Serial.println("Taking Samples ... Don't move the gyroscope");
     for (unsigned count = 0u; count < NUMBER_OF_SAMPLES; ++count)
     {
-        MPU.read_gyro_data(gyro_roll, gyro_pitch, gyro_yaw);
+        MPU.read_gyro_data(gyroData);
 
-        tempX += gyro_roll;
-        tempY += gyro_pitch;
-        tempZ += gyro_yaw;
+        tempX += gyroData.roll;
+        tempY += gyroData.pitch;
+        tempZ += gyroData.yaw;
     }
     Serial.println("Calibration Complete.");
 
     // Take the mean
-    gyro_roll = tempX / NUMBER_OF_SAMPLES;
-    gyro_pitch = tempY / NUMBER_OF_SAMPLES;
-    gyro_yaw = tempZ / NUMBER_OF_SAMPLES;
+    gyroData.roll = tempX / NUMBER_OF_SAMPLES;
+    gyroData.pitch = tempY / NUMBER_OF_SAMPLES;
+    gyroData.yaw = tempZ / NUMBER_OF_SAMPLES;
 
     // Write into EEPROM
-    EEPROM.write(6, gyro_roll >> 8);
-    EEPROM.write(7, gyro_roll bitand 0x00ff);
-    EEPROM.write(8, gyro_pitch >> 8);
-    EEPROM.write(9, gyro_pitch bitand 0x00ff);
-    EEPROM.write(10, gyro_yaw >> 8);
-    EEPROM.write(11, gyro_yaw bitand 0x00ff);
+    EEPROM.write(6, gyroData.roll >> 8);
+    EEPROM.write(7, gyroData.roll bitand 0x00ff);
+    EEPROM.write(8, gyroData.pitch >> 8);
+    EEPROM.write(9, gyroData.pitch bitand 0x00ff);
+    EEPROM.write(10, gyroData.yaw >> 8);
+    EEPROM.write(11, gyroData.yaw bitand 0x00ff);
 
     // print the calibration results
-    Serial.print(gyro_roll);
+    Serial.print(gyroData.roll);
     Serial.print(' ');
-    Serial.print(gyro_pitch);
+    Serial.print(gyroData.pitch);
     Serial.print(' ');
-    Serial.print(gyro_yaw);
+    Serial.print(gyroData.yaw);
     Serial.println("**************************************");
 
     Serial.end();
