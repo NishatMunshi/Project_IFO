@@ -3,33 +3,80 @@
 #include <EEPROM.h>
 #include "MPU_6050.hpp"
 
+#define NUMBER_OF_SAMPLES 1000
+
+void calibrate_accel(void)
+{
+    MPU.setup();
+    Serial.begin(9600);
+    int16_t accel_roll, accel_pitch, accel_yaw;
+    int32_t tempX = 0, tempY = 0, tempZ = 0;
+
+    Serial.println("Taking Samples ... Don't move the accl");
+    for (unsigned count = 0u; count < NUMBER_OF_SAMPLES; ++count)
+    {
+        MPU.read_accel_data(accel_roll, accel_pitch, accel_yaw);
+
+        tempX += accel_roll;
+        tempY += accel_pitch;
+        tempZ += accel_yaw;
+    }
+    Serial.println("Calibration Complete.");
+
+    // take the mean
+    accel_roll = tempX / NUMBER_OF_SAMPLES;
+    accel_pitch = tempY / NUMBER_OF_SAMPLES;
+    accel_yaw = tempZ / NUMBER_OF_SAMPLES;
+
+    /// Write into EEPROM
+    EEPROM.write(0, accel_roll >> 8);
+    EEPROM.write(1, accel_roll bitand 0x00ff);
+    EEPROM.write(2, accel_pitch >> 8);
+    EEPROM.write(3, accel_pitch bitand 0x00ff);
+    EEPROM.write(4, accel_yaw >> 8);
+    EEPROM.write(5, accel_yaw bitand 0x00ff);
+
+    // print the calibration results
+    Serial.print(accel_roll);
+    Serial.print(' ');
+    Serial.print(accel_pitch);
+    Serial.print(' ');
+    Serial.print(accel_yaw);
+    Serial.println();
+
+    Serial.end();
+}
 void calibrate_gyro(void)
 {
+    MPU.setup();
     Serial.begin(9600);
+
     int16_t gyro_roll, gyro_pitch, gyro_yaw;
     int32_t tempX = 0, tempY = 0, tempZ = 0;
-    MPU.reset();
-    MPU.setup_gyro(3);
 
     Serial.println("Taking Samples ... Don't move the gyro");
-    for (unsigned count = 0u; count < 10000u; count++)
+    for (unsigned count = 0u; count < NUMBER_OF_SAMPLES; ++count)
     {
-        MPU.get_gyro_data(gyro_roll, gyro_pitch, gyro_yaw);
+        MPU.read_gyro_data(gyro_roll, gyro_pitch, gyro_yaw);
 
         tempX += gyro_roll;
         tempY += gyro_pitch;
         tempZ += gyro_yaw;
     }
     Serial.println("Calibration Complete.");
-    gyro_roll = tempX / 10000;
-    gyro_pitch = tempY / 10000;
-    gyro_yaw = tempZ / 10000;
-    EEPROM.write(0, gyro_roll >> 8);
-    EEPROM.write(1, gyro_roll bitand 0x00ff);
-    EEPROM.write(2, gyro_pitch >> 8);
-    EEPROM.write(3, gyro_pitch bitand 0x00ff);
-    EEPROM.write(4, gyro_yaw >> 8);
-    EEPROM.write(5, gyro_yaw bitand 0x00ff);
+
+    // Take the mean
+    gyro_roll = tempX / NUMBER_OF_SAMPLES;
+    gyro_pitch = tempY / NUMBER_OF_SAMPLES;
+    gyro_yaw = tempZ / NUMBER_OF_SAMPLES;
+
+    // Write into EEPROM
+    EEPROM.write(6, gyro_roll >> 8);
+    EEPROM.write(7, gyro_roll bitand 0x00ff);
+    EEPROM.write(8, gyro_pitch >> 8);
+    EEPROM.write(9, gyro_pitch bitand 0x00ff);
+    EEPROM.write(10, gyro_yaw >> 8);
+    EEPROM.write(11, gyro_yaw bitand 0x00ff);
 
     // print the calibration results
     Serial.print(gyro_roll);
@@ -37,44 +84,6 @@ void calibrate_gyro(void)
     Serial.print(gyro_pitch);
     Serial.print(' ');
     Serial.print(gyro_yaw);
-    Serial.println();
-
-    Serial.end();
-}
-void calibrate_accl(void)
-{
-    Serial.begin(9600);
-    int16_t accl_roll, accl_pitch, accl_yaw;
-    int32_t tempX = 0, tempY = 0, tempZ = 0;
-    MPU.reset();
-    MPU.setup_accl(3);
-
-    Serial.println("Taking Samples ... Don't move the accl");
-    for (unsigned count = 0u; count < 10000u; count++)
-    {
-        MPU.get_accl_data(accl_roll, accl_pitch, accl_yaw);
-
-        tempX += accl_roll;
-        tempY += accl_pitch;
-        tempZ += accl_yaw;
-    }
-    Serial.println("Calibration Complete.");
-    accl_roll = tempX / 10000;
-    accl_pitch = tempY / 10000;
-    accl_yaw = tempZ / 10000;
-    EEPROM.write(6, accl_roll >> 8);
-    EEPROM.write(7, accl_roll bitand 0x00ff);
-    EEPROM.write(8, accl_pitch >> 8);
-    EEPROM.write(9, accl_pitch bitand 0x00ff);
-    EEPROM.write(10, accl_yaw >> 8);
-    EEPROM.write(11, accl_yaw bitand 0x00ff);
-
-    // print the calibration results
-    Serial.print(accl_roll);
-    Serial.print(' ');
-    Serial.print(accl_pitch);
-    Serial.print(' ');
-    Serial.print(accl_yaw);
     Serial.println();
 
     Serial.end();

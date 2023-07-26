@@ -10,9 +10,9 @@
 
 constexpr uint32_t REFRESH_RATE = 3496; /// 3500 -4
 byte array[12];
-uint16_t throttle, roll, pitch, yaw, camera, autopilot;                                                                                     // receiver inputs
-int16_t gyro_roll, gyro_pitch, gyro_yaw, accl_roll, accl_pitch, accl_yaw;                                                                   // sensor inputs
-int16_t gyro_roll_zero_error, gyro_pitch_zero_error, gyro_yaw_zero_error, accl_roll_zero_error, accl_pitch_zero_error, accl_yaw_zero_error; // zero errors
+uint16_t throttle, roll, pitch, yaw, camera, autopilot;                                                          // receiver inputs
+int16_t gyro_roll, gyro_pitch, gyro_yaw, accel_roll, accel_pitch, accel_yaw;                                     // sensor inputs
+int16_t gyro_roll_calib, gyro_pitch_calib, gyro_yaw_calib, accel_roll_calib, accel_pitch_calib, accel_yaw_calib; // zero errors
 
 uint16_t PW_motor_0, PW_motor_1, PW_motor_2, PW_motor_3; // final motor pulse widths
 
@@ -21,25 +21,23 @@ uint32_t loop_timer, elapsed_time; // two timers to take care of the timing and 
 void setup()
 {
 #ifdef CALIBRATE
+    Wire.begin();
     calibrate_gyro();
     calibrate_accl();
 #endif
 
 #ifndef CALIBRATE
     // reset and setup the gyro and accl
-    Wire.begin();
-    MPU.reset();
-    MPU.setup_gyro(3);
-    MPU.setup_accl(3);
+    MPU.setup();
 
     // Read the zero errors from EEPROM
-    gyro_roll_zero_error = (EEPROM.read(0) << 8) bitor EEPROM.read(1);
-    gyro_pitch_zero_error = (EEPROM.read(2) << 8) bitor EEPROM.read(3);
-    gyro_yaw_zero_error = (EEPROM.read(4) << 8) bitor EEPROM.read(5);
+    accel_roll_calib = (EEPROM.read(0) << 8) bitor EEPROM.read(1);
+    accel_pitch_calib = (EEPROM.read(2) << 8) bitor EEPROM.read(3);
+    accel_yaw_calib = (EEPROM.read(4) << 8) bitor EEPROM.read(5);
 
-    accl_roll_zero_error = (EEPROM.read(6) << 8) bitor EEPROM.read(7);
-    accl_pitch_zero_error = (EEPROM.read(8) << 8) bitor EEPROM.read(9);
-    accl_yaw_zero_error = (EEPROM.read(10) << 8) bitor EEPROM.read(11);
+    gyro_roll_calib = (EEPROM.read(6) << 8) bitor EEPROM.read(7);
+    gyro_pitch_calib = (EEPROM.read(8) << 8) bitor EEPROM.read(9);
+    gyro_yaw_calib = (EEPROM.read(10) << 8) bitor EEPROM.read(11);
 
     // set up the radio receiver with the correct settings.
     receiver.setup();
@@ -55,7 +53,7 @@ void loop()
     // this loop ensures a steady refresh rate
     for (elapsed_time = 0; elapsed_time < REFRESH_RATE; elapsed_time = micros() - loop_timer) // corresponding to the refresh rate of the flight controller; subject to
     {                                                                                         // change according to the performance needs.
-        __asm__ __volatile__("nop\n\t");                                                      // do nothing in the refresh period, nop is used to remove compiler optimisation
+                                                                                              // __asm__ __volatile__("nop\n\t");                                                      // do nothing in the refresh period, nop is used to remove compiler optimisation
     }
 
     PORTD or_eq 0b11110000;                  // pull the pins that execute PWM high
@@ -82,17 +80,20 @@ void loop()
     throttle = array[10] bitor (throttle << 8);
     // -------------------------------------------------
 
-    // reading the gyro and accl data (about 560 us)
-    MPU.get_gyro_data(gyro_roll, gyro_pitch, gyro_yaw);
-    gyro_roll -= gyro_roll_zero_error;
-    gyro_pitch -= gyro_pitch_zero_error;
-    gyro_yaw -= gyro_yaw_zero_error;
+    unsigned long timer = micros();
 
-    MPU.get_accl_data(accl_roll, accl_pitch, accl_yaw);
-    accl_roll -= accl_roll_zero_error;
-    accl_pitch -= accl_pitch_zero_error;
-    accl_yaw -= accl_yaw_zero_error;
+    // reading the gyro and accl data (about 384 us)
+    MPU.read_accel_data(accel_roll, accel_pitch, accel_yaw);
+    accel_roll -= accel_roll_calib;
+    accel_pitch -= accel_pitch_calib;
+    accel_yaw -= accel_yaw_calib;
+
+    MPU.read_gyro_data(gyro_roll, gyro_pitch, gyro_yaw);
+    gyro_roll -= gyro_roll_calib;
+    gyro_yaw -= gyro_yaw_calib;
+    gyro_pitch -= gyro_pitch_calib;
     // -------------------------------------------------
+    timer = micros() - timer;
 
     // one PWM pulse for each motor
     for (; true; elapsed_time = micros() - loop_timer) // we reinitiate the loop timer at the instant PWM pins go high
@@ -125,6 +126,7 @@ void loop()
     PW_motor_2 = pitch;
     PW_motor_3 = yaw;
 
-// -------------------------------------------------
+    // -------------------------------------------------
+    Serial.println(timer);
 #endif
 }

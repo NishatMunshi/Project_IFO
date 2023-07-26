@@ -10,64 +10,76 @@ private:
     {
         PWR_MGMT_1 = 0x6b,
         GYRO_CONFIG = 0x1b,
-        ACCL_CONFIG = 0x1c,
+        ACCEL_CONFIG = 0x1c,
         GYRO_XOUT_H = 0x43,
-        ACCL_XOUT_H = 0x3b
+        ACCEL_XOUT_H = 0x3b,
+        TEMP_OUT_H = 0x41
     };
+    byte lowByte, highByte;
+    const byte howManyBytes = 6;
 
 public:
-    void reset(void)
+    // to be called in setup once
+    void setup(void)
     {
         Wire.beginTransmission(MPU_ADDR);
-        // reset the chip
-        Wire.write(PWR_MGMT_1);
-        Wire.write(0x00);
+        Wire.write(ACCEL_CONFIG);
+        Wire.write(0b00011000); // +-16g full scale range
         Wire.endTransmission();
-    }
 
-public: // gyro
-    // full scale range 0 for 250 deg, 1 for 500 deg, 2 for 1000 deg, 3 for 2000 deg
-    void setup_gyro(const uint8_t _fullScaleRange)
-    {
         Wire.beginTransmission(MPU_ADDR);
-        // reset the chip
         Wire.write(GYRO_CONFIG);
-        Wire.write(_fullScaleRange << 3);
+        Wire.write(0b00011000); // +-2000 deg full scale range
+        Wire.endTransmission();
+
+        Wire.beginTransmission(MPU_ADDR);
+        Wire.write(PWR_MGMT_1);
+        Wire.write(0b00001011); // dont reset the device, dont sleep, dont cycle, temp sensor disable, use z axis gyro clock as reference
         Wire.endTransmission();
     }
 
-    void get_gyro_data(int16_t &gyro_roll, int16_t &gyro_pitch, int16_t &gyro_yaw)
+public:
+    void read_accel_data(int16_t &accel_roll, int16_t &accel_pitch, int16_t &accel_yaw)
+    {
+        Wire.beginTransmission(MPU_ADDR);
+        Wire.write(ACCEL_XOUT_H);
+        Wire.endTransmission();
+
+        Wire.requestFrom(MPU_ADDR, howManyBytes);
+
+        highByte = Wire.read();
+        lowByte = Wire.read();
+        accel_roll = (highByte << 8) bitor lowByte;
+
+        highByte = Wire.read();
+        lowByte = Wire.read();
+        accel_pitch = (highByte << 8) bitor lowByte;
+
+        highByte = Wire.read();
+        lowByte = Wire.read();
+        accel_yaw = (highByte << 8) bitor lowByte;
+    }
+
+public:
+    void read_gyro_data(int16_t &gyro_roll, int16_t &gyro_pitch, int16_t &gyro_yaw)
     {
         Wire.beginTransmission(MPU_ADDR);
         Wire.write(GYRO_XOUT_H);
         Wire.endTransmission();
 
-        Wire.requestFrom(MPU_ADDR, 6);
-        gyro_roll = (Wire.read() << 8) bitor Wire.read();
-        gyro_pitch = (Wire.read() << 8) bitor Wire.read();
-        gyro_yaw = (Wire.read() << 8) bitor Wire.read();
-    }
+        Wire.requestFrom(MPU_ADDR, howManyBytes);
 
-public: // accl
-    // 0 for 2g, 1 for 4g, 2 for 8g, 3 for 16g
-    void setup_accl(const uint8_t _fullScaleRange)
-    {
-        Wire.beginTransmission(MPU_ADDR);
-        // reset the chip
-        Wire.write(ACCL_CONFIG);
-        Wire.write(_fullScaleRange << 3);
-        Wire.endTransmission();
-    }
-    void get_accl_data(int16_t &accl_roll, int16_t &accl_pitch, int16_t &accl_yaw)
-    {
-        Wire.beginTransmission(MPU_ADDR);
-        Wire.write(ACCL_XOUT_H);
-        Wire.endTransmission();
+        highByte = Wire.read();
+        lowByte = Wire.read();
+        gyro_roll = (highByte << 8) bitor lowByte;
 
-        Wire.requestFrom(MPU_ADDR, 6);
-        accl_roll = (Wire.read() << 8) bitor Wire.read();
-        accl_pitch = (Wire.read() << 8) bitor Wire.read();
-        accl_yaw = (Wire.read() << 8) bitor Wire.read();
+        highByte = Wire.read();
+        lowByte = Wire.read();
+        gyro_pitch = (highByte << 8) bitor lowByte;
+
+        highByte = Wire.read();
+        lowByte = Wire.read();
+        gyro_yaw = (highByte << 8) bitor lowByte;
     }
 };
 
