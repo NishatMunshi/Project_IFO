@@ -154,11 +154,8 @@ public:
         for (unsigned i = 0; i < PAYLOAD_LENGTH; ++i)
         {
             array[i] = SPI.transfer(SPI_Commands::NOP);
-            // Serial.print(array[i]);
-            // Serial.print(' ');
         }
         PORTB or_eq 0b00000100;
-        // Serial.println();
 
         // decompose the array into 6 channels and save it
         // throttle, roll, pitch, yaw, camera, autopilot

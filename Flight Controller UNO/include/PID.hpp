@@ -6,8 +6,8 @@
 class PID_Controller
 {
     const Vector3<float> P_gain = {0.5f, 0.5f, 0.5f};
-    const Vector3<float> I_gain = {0.01f, 0.01f, 0.01f};
-    const Vector3<float> D_gain = {10.f, 10.f, 10.f};
+    const Vector3<float> I_gain = {0.000f, 0.000f, 0.000f};
+    const Vector3<float> D_gain = {5.f, 5.f, 0.f};
 
     Vector3<float> error = {0.f, 0.f, 0.f}, previous_error = error;
 

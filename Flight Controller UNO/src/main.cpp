@@ -11,7 +11,7 @@
 #define __CALIBRATE__
 #endif
 
-constexpr uint32_t REFRESH_RATE = 2000; // 3500 - 4
+constexpr uint32_t REFRESH_RATE = 2008; // the minimum we can go because reading micros() timer takes 4 us
 
 receiver_output receiverData;
 
@@ -73,7 +73,6 @@ void loop()
     receiver.read_rx_payload(receiverData);
     // -------------------------------------------------
 
-    // unsigned long timer = micros();
     // reading the gyro and accl data and subtracting the offsets (about 384 us)
     MPU.read_accel_data(accelData);
     accelData -= accelOffset;
@@ -81,7 +80,10 @@ void loop()
     MPU.read_gyro_data(gyroData);
     gyroData -= gyroOffset;
     // -------------------------------------------------
-    // timer = micros() - timer;
+
+    // pid corrections and pulsewidth calc (about 280 us)
+    PID.calc_PWs(receiverData, gyroData, motorPW);
+    // -------------------------------------------------
 
     // one PWM pulse FALLING EDGE for each motor
     for (; true; elapsed_time = micros() - loop_timer) // we reinitiate the loop timer at the instant PWM pins go high
@@ -99,53 +101,5 @@ void loop()
             break; // when all 4 pulses have finished, break out of the loop
     }
     // -------------------------------------------------
-
-    // -------------------------------------------------
-
-    // unsigned long timer = micros();
-    // PID SECTION
-    PID.calc_PWs(receiverData, gyroData, motorPW);
-
-    //    Serial.print(receiverData.throttle) ;
-    //    Serial.print(' ');
-    //    Serial.print(receiverData.roll) ;
-    //    Serial.print(' ');
-    //    Serial.print(receiverData.pitch) ;
-    //    Serial.print(' ');
-    //    Serial.print(receiverData.yaw) ;
-    //    Serial.print(' ');
-    //    Serial.print(receiverData.camera) ;
-    //    Serial.print(' ');
-    //    Serial.print(receiverData.autopilot) ;
-    //    Serial.println();
-
-    //    Serial.print(gyroData.roll) ;
-    //    Serial.print(' ');
-    //    Serial.print(gyroData.pitch) ;
-    //    Serial.print(' ');
-    //    Serial.print(gyroData.yaw) ;
-    //    Serial.println();
-
-    // motorPW[0] = receiverData.roll;
-    // motorPW[1] = receiverData.roll;
-    // motorPW[2] = receiverData.roll;
-    // motorPW[3] = receiverData.roll;
-
-    // timer = micros() - timer;
-    // -------------------------------------------------
-    // Serial.print(motorPW[0]);
-    // Serial.print(' ');
-    // Serial.print(motorPW[1]);
-    // Serial.print(' ');
-    // Serial.print(motorPW[2]);
-    // Serial.print(' ');
-    // Serial.println(motorPW[3]);
-
-    // Serial.println(timer);
-
 #endif
-    // servo.write(100);
-    // delay(200);
-    // servo.write(20);
-    // delay(200);
 }
