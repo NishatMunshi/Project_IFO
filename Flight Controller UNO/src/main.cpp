@@ -4,9 +4,7 @@
 #include <MPU_6050.hpp>
 #include <calibrate_MPU.hpp>
 #include <PID.hpp>
-// #include<Servo.h>
 
-// Servo servo;
 #if 0
 #define __CALIBRATE__
 #endif
@@ -27,7 +25,6 @@ uint32_t loop_timer, elapsed_time; // two timers to take care of the timing and 
 
 void setup()
 {
-    // servo.attach(5);
 #ifdef __CALIBRATE__
     calibrate_accel();
     calibrate_gyro();
