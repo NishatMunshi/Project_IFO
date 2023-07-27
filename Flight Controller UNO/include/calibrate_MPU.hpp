@@ -42,7 +42,7 @@ void calibrate_accel(void)
     Serial.print(' ');
     Serial.print(accelData.y);
     Serial.print(' ');
-    Serial.print(accelData.z);
+    Serial.println(accelData.z);
     Serial.println("**************************************");
 
     Serial.end();
@@ -84,7 +84,7 @@ void calibrate_gyro(void)
     Serial.print(' ');
     Serial.print(gyroData.pitch);
     Serial.print(' ');
-    Serial.print(gyroData.yaw);
+    Serial.println(gyroData.yaw);
     Serial.println("**************************************");
 
     Serial.end();

@@ -4,16 +4,16 @@
 
 struct receiver_output
 {
-    uint16_t throttle, roll, pitch, yaw, camera;
+    int16_t throttle, roll, pitch, yaw, camera;
     bool autopilot;
 };
 class nRF24L01
 {
 public:
-    const byte PAYLOAD_LENGTH = 12;
+    const byte PAYLOAD_LENGTH = 11;
 
 private:
-    byte array[12];
+    byte array[11];
     const byte CSN = 10, CE = 9; // pins 9 through 13 are used for SPI communication with the radio receiver
 
 private:
@@ -80,17 +80,20 @@ private:
         digitalWrite(CSN, HIGH);
     }
     // for debugging only.
-    void read_from_register(const Registers _registerAddress)
+    void read_from_register(const byte _registerAddress, const unsigned _numberOfBytes = 1)
     {
         byte value;
         digitalWrite(CSN, LOW);
 
         SPI.transfer(R_REGISTER bitor _registerAddress);
-        value = SPI.transfer(NOP);
-
+        for (unsigned i = 0; i < _numberOfBytes; ++i)
+        {
+            value = SPI.transfer(NOP);
+            Serial.print(value, HEX);
+            Serial.print(' ');
+        }
+        Serial.println();
         digitalWrite(CSN, HIGH);
-
-        Serial.println(value, BIN);
     }
 
 public:
@@ -116,6 +119,9 @@ public:
         // disable enhanced shockburst
         write_to_register(EN_AA, 0x00);
 
+        // only enable data pipe 0
+        write_to_register(EN_RXADDR, 0x01);
+
         // frequency channel setup
         write_to_register(RF_CH, 0b01111100); // 2524 MHz channel
 
@@ -123,11 +129,11 @@ public:
         write_to_register(RF_SETUP, 0x01); // setup lna gain as this is a receiver
 
         // payload length setup
-        write_to_register(RX_PW_P0, PAYLOAD_LENGTH); // 12 byte payload length
+        write_to_register(RX_PW_P0, PAYLOAD_LENGTH); // 11 byte payload length
 
         // give the device a unique address 0xD6D6D6D6D6 (same as Transmitter)
         digitalWrite(CSN, LOW);
-        SPI.transfer(W_REGISTER bitor TX_ADDR);
+        SPI.transfer(W_REGISTER bitor RX_ADDR_P0);
         for (unsigned i = 0; i < 5; ++i)
         {
             SPI.transfer(0xD6);
@@ -137,8 +143,6 @@ public:
         // flush the rx fifo once
         command_SPI(FLUSH_RX);
 
-        // ACTIVATE
-
         // CE high
         digitalWrite(CE, HIGH);
     }
@@ -147,34 +151,37 @@ public:
     {
         PORTB and_eq 0b11111011;
         SPI.transfer(SPI_Commands::R_RX_PAYLOAD);
-        for (unsigned i = 0; i < 12; ++i)
+        for (unsigned i = 0; i < PAYLOAD_LENGTH; ++i)
         {
             array[i] = SPI.transfer(SPI_Commands::NOP);
+            // Serial.print(array[i]);
+            // Serial.print(' ');
         }
         PORTB or_eq 0b00000100;
+        // Serial.println();
 
         // decompose the array into 6 channels and save it
         // throttle, roll, pitch, yaw, camera, autopilot
-        // array[0] = autopilot least significant byte
-        // array[1] = autopilot most significant byte
-        _receiverData.autopilot = array[1];
-        _receiverData.autopilot = array[0] bitor (_receiverData.autopilot << 8);
-        _receiverData.autopilot = _receiverData.autopilot ? true : false;
+        // array[0] = autopilot
+        // array[1] = camera least significant byte
+        // array[2] = camera most significant byte
+        _receiverData.autopilot = array[0];
+        // _receiverData.autopilot = _receiverData.autopilot ? true : false;
 
-        _receiverData.camera = array[3];
-        _receiverData.camera = array[2] bitor (_receiverData.camera << 8);
+        _receiverData.camera = array[2];
+        _receiverData.camera = array[1] bitor (_receiverData.camera << 8);
 
-        _receiverData.yaw = array[5];
-        _receiverData.yaw = array[4] bitor (_receiverData.yaw << 8);
+        _receiverData.yaw = array[4];
+        _receiverData.yaw = array[3] bitor (_receiverData.yaw << 8);
 
-        _receiverData.pitch = array[7];
-        _receiverData.pitch = array[6] bitor (_receiverData.pitch << 8);
+        _receiverData.pitch = array[6];
+        _receiverData.pitch = array[5] bitor (_receiverData.pitch << 8);
 
-        _receiverData.roll = array[9];
-        _receiverData.roll = array[8] bitor (_receiverData.roll << 8);
-        
-        _receiverData.throttle = array[11];
-        _receiverData.throttle = array[10] bitor (_receiverData.throttle << 8);
+        _receiverData.roll = array[8];
+        _receiverData.roll = array[7] bitor (_receiverData.roll << 8);
+
+        _receiverData.throttle = array[10];
+        _receiverData.throttle = array[9] bitor (_receiverData.throttle << 8);
     }
 };
 nRF24L01 receiver;

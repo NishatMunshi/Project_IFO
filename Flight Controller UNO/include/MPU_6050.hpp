@@ -1,6 +1,7 @@
 #pragma once
 #include <Wire.h>
 #include <Arduino.h>
+#include<vector.hpp>
 
 struct gyro_output
 {
@@ -43,6 +44,8 @@ public:
     // to be called in setup once
     void setup(void)
     {
+        // Wire.begin();
+
         Wire.beginTransmission(MPU_ADDR);
         Wire.write(ACCEL_CONFIG);
         Wire.write(0b00011000); // +-16g full scale range

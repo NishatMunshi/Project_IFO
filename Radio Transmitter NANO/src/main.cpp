@@ -3,12 +3,9 @@
 
 // global variables
 constexpr uint8_t CSN = 10, CE = 9, AUTOPILOT_INPUT = 8; // this way pins 9 through 13 are used for SPI communication with the radio transmitter
-constexpr uint8_t PAYLOAD_LENGTH = 12;
-uint16_t throttle, roll, pitch, yaw, camera, autopilot = 0;
+constexpr uint8_t PAYLOAD_LENGTH = 11;
+int16_t throttle, roll, pitch, yaw, camera, autopilot = 0;
 uint8_t array[PAYLOAD_LENGTH];
-
-uint32_t timer_i, timer_f;
-byte value;
 
 enum Registers : uint8_t
 {
@@ -72,17 +69,20 @@ void command_SPI(const SPI_Commands _command)
 }
 
 // for debugging only.
-void read_from_register(const byte _registerAddress)
+void read_from_register(const byte _registerAddress, const unsigned _numberOfBytes = 1)
 {
 	byte value;
 	digitalWrite(CSN, LOW);
 
 	SPI.transfer(R_REGISTER bitor _registerAddress);
-	value = SPI.transfer(NOP);
-
+	for (unsigned i = 0; i < _numberOfBytes; ++i)
+	{
+		value = SPI.transfer(NOP);
+		Serial.print(value, HEX);
+		Serial.print(' ');
+	}
+	Serial.println();
 	digitalWrite(CSN, HIGH);
-
-	Serial.println(value, BIN);
 }
 
 void setup()
@@ -110,6 +110,9 @@ void setup()
 	// disable enhanced shockburst
 	write_to_register(EN_AA, 0x00);
 
+	// setup 5 byte address width
+	write_to_register(SETUP_AW, 0x03);
+
 	// frequency channel setup
 	write_to_register(RF_CH, 0b01111100); // 2524 MHz channel
 
@@ -117,12 +120,12 @@ void setup()
 	write_to_register(RF_SETUP, 0x00);
 
 	// payload length setup
-	write_to_register(RX_PW_P0, PAYLOAD_LENGTH); // 12 byte payload length
+	write_to_register(RX_PW_P0, PAYLOAD_LENGTH); // 11 byte payload length
 
 	// give the device a unique address 0xD6D6D6D6D6
 	digitalWrite(CSN, LOW);
-	SPI.transfer(W_REGISTER bitor RX_ADDR_P0);
-	for(unsigned i = 0; i< 5; ++i)
+	SPI.transfer(W_REGISTER bitor TX_ADDR);
+	for (unsigned i = 0; i < 5; ++i)
 	{
 		SPI.transfer(0xD6);
 	}
@@ -150,33 +153,33 @@ void loop()
 	pitch = analogRead(A2);
 	yaw = analogRead(A3);
 	camera = analogRead(A4);
-	autopilot = (PINB bitand 0b00000001) ? 0x5555 : 0x0000; // digitalRead(8)
+	autopilot = (PINB bitand 0b00000001); // digitalRead(8)
 	// -------------------------------------- 564 microseconds
 
 	// map the values into pulsewidth,
 	throttle = throttle * 0.977517106549365 + 1000;
-	roll = roll * 0.977517106549365 + 1000;
-	pitch = pitch * 0.977517106549365 + 1000;
-	yaw = yaw * 0.977517106549365 + 1000;
-	camera = camera * 0.977517106549365 + 1000; // 1500 us pulse is the centre position of a servo.
+	roll = roll * 1.95503421309873 - 1000;
+	pitch = pitch * 1.95503421309873 - 1000;
+	yaw = yaw * 1.95503421309873 - 1000;
+	// camera = camera * 1.95503421309873 - 1000; // 1500 us pulse is the centre position of a servo.
 	// -------------------------------------- 120 microseconds
 
-	// process the data into 12 byte array
+	// process the data into 11 byte array
 	// throttle, roll, pitch, yaw, camera, autopilot
-	// array[0] = autopilot least significant byte
-	// array[1] = autopilot most significant byte
-	array[11] = throttle >> 8;
-	array[10] = throttle bitand 0x00ff;
-	array[9] = roll >> 8;
-	array[8] = roll bitand 0x00ff;
-	array[7] = pitch >> 8;
-	array[6] = pitch bitand 0x00ff;
-	array[5] = yaw >> 8;
-	array[4] = yaw bitand 0x00ff;
-	array[3] = camera >> 8;
-	array[2] = camera bitand 0x00ff;
-	array[1] = autopilot >> 8;
-	array[0] = autopilot bitand 0x00ff;
+	// array[0] = autopilot
+	// array[1] = camera least significant byte
+	// array[2] = camera most significant byte
+	array[10] = throttle >> 8;
+	array[9] = throttle bitand 0x00ff;
+	array[8] = roll >> 8;
+	array[7] = roll bitand 0x00ff;
+	array[6] = pitch >> 8;
+	array[5] = pitch bitand 0x00ff;
+	array[4] = yaw >> 8;
+	array[3] = yaw bitand 0x00ff;
+	array[2] = camera >> 8;
+	array[1] = camera bitand 0x00ff;
+	array[0] = autopilot;
 	// -------------------------------- < 4 microseconds
 
 	// PORTB and_eq 0b11111011;
@@ -190,9 +193,12 @@ void loop()
 	for (unsigned i = 0; i < PAYLOAD_LENGTH; ++i)
 	{
 		SPI.transfer(array[i]);
+		// Serial.print(array[i]);
+		// Serial.print(' ');
 	}
 	// digitalWrite(CSN, HIGH);
 	PORTB or_eq 0b00000100;
+	// Serial.println();
 	// -------------------------------- 36 microseconds
 
 	// timer_f = micros();
@@ -200,4 +206,4 @@ void loop()
 	// Serial.println(timer_f-timer_i);
 
 	// PORTD or_eq ((value bitand 0x10) << 0); // checking if tx fifo is empty before filling it
-}  
+}
