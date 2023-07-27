@@ -11,7 +11,7 @@
 #define __CALIBRATE__
 #endif
 
-constexpr uint32_t REFRESH_RATE = 3496; // 3500 - 4
+constexpr uint32_t REFRESH_RATE = 2000; // 3500 - 4
 
 receiver_output receiverData;
 
@@ -133,13 +133,13 @@ void loop()
 
     // timer = micros() - timer;
     // -------------------------------------------------
-    Serial.print(motorPW[0]);
-    Serial.print(' ');
-    Serial.print(motorPW[1]);
-    Serial.print(' ');
-    Serial.print(motorPW[2]);
-    Serial.print(' ');
-    Serial.println(motorPW[3]);
+    // Serial.print(motorPW[0]);
+    // Serial.print(' ');
+    // Serial.print(motorPW[1]);
+    // Serial.print(' ');
+    // Serial.print(motorPW[2]);
+    // Serial.print(' ');
+    // Serial.println(motorPW[3]);
 
     // Serial.println(timer);
 
