@@ -16,6 +16,7 @@ class PID_Controller
     Vector3<float> PID_output;
 
     const float PID_max_output = 200.f;
+    uint16_t throttle_output;
 
 public:
     // call in setup once
@@ -27,7 +28,7 @@ public:
     }
 
 public:
-    void calc_PWs(receiver_output &_receiverData, const gyro_output &_gyroData, uint16_t *_motorPW)
+    void calc_PWs(const receiver_output &_receiverData, const gyro_output &_gyroData, uint16_t *_motorPW)
     {
         // remove later (simulates movement)
         // static int i = 0, k = 1;
@@ -48,7 +49,7 @@ public:
         I_correction += I_gain * error;
         D_correction = D_gain * (error - previous_error);
 
-        // Save this error in the previous_error varable
+        // Save this error in the previous_error vector
         previous_error = error;
 
         // the total PID output is the sum of P, I and D outputs
@@ -64,15 +65,17 @@ public:
 
         // limit the throttle to make room for corrections
         if (_receiverData.throttle > 1800)
-            _receiverData.throttle = 1800;
-        if (_receiverData.throttle < 1200)
-            _receiverData.throttle = 1200;
+            throttle_output = 1800;
+        else if (_receiverData.throttle < 1200)
+            throttle_output = 1200;
+        else
+            throttle_output = _receiverData.throttle;
 
         // calculate the PWS
-        _motorPW[0] = _receiverData.throttle - PID_output.roll - PID_output.pitch - PID_output.yaw;
-        _motorPW[1] = _receiverData.throttle + PID_output.roll - PID_output.pitch + PID_output.yaw;
-        _motorPW[2] = _receiverData.throttle + PID_output.roll + PID_output.pitch - PID_output.yaw;
-        _motorPW[3] = _receiverData.throttle - PID_output.roll + PID_output.pitch + PID_output.yaw;
+        _motorPW[0] = throttle_output - PID_output.roll - PID_output.pitch - PID_output.yaw;
+        _motorPW[1] = throttle_output + PID_output.roll - PID_output.pitch + PID_output.yaw;
+        _motorPW[2] = throttle_output + PID_output.roll + PID_output.pitch - PID_output.yaw;
+        _motorPW[3] = throttle_output - PID_output.roll + PID_output.pitch + PID_output.yaw;
 
         for (unsigned i = 0; i < 4; ++i)
         {

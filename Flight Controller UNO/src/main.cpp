@@ -49,9 +49,38 @@ void setup()
 
     // clear the PID variable memory
     PID.reset();
+
+    // wait for a special stick sequence before starting the motors
+    do
+    {
+        // wait until we receive a valid data packet
+        while (not receiver.ready())
+            ;
+        receiver.read_rx_payload(receiverData);
+        // Serial.print("OFF ");
+        // receiver.print_data(receiverData);
+    } while (not(receiverData.throttle < 1020 and receiverData.yaw < -980 and receiverData.ON));
+    // again wait until data is ready in the receiver before entering loop function
+    while (not receiver.ready())
+        ;
 #endif
 }
+void halt(void)
+{
+repeat:
+    // wait until we receive a valid data packet
+    while (not receiver.ready())
+        ;
+    receiver.read_rx_payload(receiverData);
 
+    // Serial.print("HALTED ");
+    // receiver.print_data(receiverData);
+
+    // turn motors back ON if start condition is met
+    if (receiverData.throttle < 1020 and receiverData.yaw < -980 and receiverData.ON)
+        return;
+    goto repeat;
+}
 void loop()
 {
 #ifndef __CALIBRATE__
@@ -67,6 +96,8 @@ void loop()
     loop_timer = micros();  // reinitiate the loop_timer
 
     // reading the receiver inputs ( about 40 us)
+    // we don't need to check for the data to be ready
+    // in the receiver since a program loop gives enough time already
     receiver.read_rx_payload(receiverData);
     // -------------------------------------------------
 
@@ -98,5 +129,14 @@ void loop()
             break; // when all 4 pulses have finished, break out of the loop
     }
     // -------------------------------------------------
+
+    // turn off and turn back on routine
+    if (receiverData.throttle < 1020 and receiverData.yaw > 980 and not receiverData.ON)
+    {
+        halt();
+        // when we return from halt, make sure data is ready in the receiver
+        while (not receiver.ready())
+            ;
+    }
 #endif
 }

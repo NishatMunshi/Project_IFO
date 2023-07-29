@@ -2,9 +2,9 @@
 #include <SPI.h>
 
 // global variables
-constexpr uint8_t CSN = 10, CE = 9, AUTOPILOT_INPUT = 8; // this way pins 9 through 13 are used for SPI communication with the radio transmitter
-constexpr uint8_t PAYLOAD_LENGTH = 11;
-int16_t throttle, roll, pitch, yaw, camera, autopilot = 0;
+constexpr uint8_t CSN = 10, CE = 9, AUTOPILOT_INPUT = 8, ON_INPUT = 7; // this way pins 9 through 13 are used for SPI communication with the radio transmitter
+constexpr uint8_t PAYLOAD_LENGTH = 12;
+int16_t throttle, roll, pitch, yaw, camera, autopilot = 0, ON;
 uint8_t array[PAYLOAD_LENGTH];
 
 enum Registers : uint8_t
@@ -100,6 +100,7 @@ void setup()
 	digitalWrite(CE, LOW);
 
 	pinMode(AUTOPILOT_INPUT, INPUT);
+	pinMode(ON_INPUT, INPUT);
 
 	// set the SPI settings
 	SPI.beginTransaction(SPISettings(8000000, MSBFIRST, SPI_MODE0));
@@ -120,7 +121,7 @@ void setup()
 	write_to_register(RF_SETUP, 0x00);
 
 	// payload length setup
-	write_to_register(RX_PW_P0, PAYLOAD_LENGTH); // 11 byte payload length
+	write_to_register(RX_PW_P0, PAYLOAD_LENGTH); // 12 byte payload length
 
 	// give the device a unique address 0xD6D6D6D6D6
 	digitalWrite(CSN, LOW);
@@ -154,6 +155,7 @@ void loop()
 	yaw = analogRead(A3);
 	camera = analogRead(A4);
 	autopilot = (PINB bitand 0b00000001); // digitalRead(8)
+	ON = (PIND bitand 0b10000000);		  // digitalRead(7);
 	// -------------------------------------- 564 microseconds
 
 	// map the values into pulsewidth,
@@ -169,22 +171,24 @@ void loop()
 	// array[0] = autopilot
 	// array[1] = camera least significant byte
 	// array[2] = camera most significant byte
-	array[10] = throttle >> 8;
-	array[9] = throttle bitand 0x00ff;
-	array[8] = roll >> 8;
-	array[7] = roll bitand 0x00ff;
-	array[6] = pitch >> 8;
-	array[5] = pitch bitand 0x00ff;
-	array[4] = yaw >> 8;
-	array[3] = yaw bitand 0x00ff;
-	array[2] = camera >> 8;
-	array[1] = camera bitand 0x00ff;
-	array[0] = autopilot;
+	array[11] = throttle >> 8;
+	array[10] = throttle bitand 0x00ff;
+	array[9] = roll >> 8;
+	array[8] = roll bitand 0x00ff;
+	array[7] = pitch >> 8;
+	array[6] = pitch bitand 0x00ff;
+	array[5] = yaw >> 8;
+	array[4] = yaw bitand 0x00ff;
+	array[3] = camera >> 8;
+	array[2] = camera bitand 0x00ff;
+	array[1] = autopilot;
+	array[0] = ON;
 	// -------------------------------- < 4 microseconds
 
 	// PORTB and_eq 0b11111011;
 	// SPI.transfer(SPI_Commands::R_REGISTER bitor FIFO_STATUS);
-	// value = SPI.transfer(NOP);
+	// byte value = SPI.transfer(NOP);
+	// Serial.println(value, HEX);
 	// PORTB or_eq 0b00000100;
 
 	// w_tx_payload with the processed data

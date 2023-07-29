@@ -5,15 +5,15 @@
 struct receiver_output
 {
     int16_t throttle, roll, pitch, yaw, camera;
-    bool autopilot;
+    bool autopilot, ON;
 };
 class nRF24L01
 {
 public:
-    const byte PAYLOAD_LENGTH = 11;
+    const byte PAYLOAD_LENGTH = 12;
 
 private:
-    byte array[11];
+    byte array[12];
     const byte CSN = 10, CE = 9; // pins 9 through 13 are used for SPI communication with the radio receiver
 
 private:
@@ -158,27 +158,57 @@ public:
         PORTB or_eq 0b00000100;
 
         // decompose the array into 6 channels and save it
-        // throttle, roll, pitch, yaw, camera, autopilot
-        // array[0] = autopilot
-        // array[1] = camera least significant byte
-        // array[2] = camera most significant byte
-        _receiverData.autopilot = array[0];
+        // throttle, roll, pitch, yaw, camera, autopilot, ON
+        // array[0] = ON
+        // array[1] = autopilot
+        // array[2] = camera least significant byte
+        // array[3] = camera most significant byte
+        _receiverData.ON = array[0];
+        _receiverData.autopilot = array[1];
         // _receiverData.autopilot = _receiverData.autopilot ? true : false;
 
-        _receiverData.camera = array[2];
-        _receiverData.camera = array[1] bitor (_receiverData.camera << 8);
+        _receiverData.camera = array[3];
+        _receiverData.camera = array[2] bitor (_receiverData.camera << 8);
 
-        _receiverData.yaw = array[4];
-        _receiverData.yaw = array[3] bitor (_receiverData.yaw << 8);
+        _receiverData.yaw = array[5];
+        _receiverData.yaw = array[4] bitor (_receiverData.yaw << 8);
 
-        _receiverData.pitch = array[6];
-        _receiverData.pitch = array[5] bitor (_receiverData.pitch << 8);
+        _receiverData.pitch = array[7];
+        _receiverData.pitch = array[6] bitor (_receiverData.pitch << 8);
 
-        _receiverData.roll = array[8];
-        _receiverData.roll = array[7] bitor (_receiverData.roll << 8);
+        _receiverData.roll = array[9];
+        _receiverData.roll = array[8] bitor (_receiverData.roll << 8);
 
-        _receiverData.throttle = array[10];
-        _receiverData.throttle = array[9] bitor (_receiverData.throttle << 8);
+        _receiverData.throttle = array[11];
+        _receiverData.throttle = array[10] bitor (_receiverData.throttle << 8);
+    }
+
+    // true when receive fifo is not empty
+    bool ready(void) const
+    {
+        digitalWrite(CSN, LOW);
+        SPI.transfer(R_REGISTER bitor FIFO_STATUS);
+        byte value = SPI.transfer(NOP);
+        digitalWrite(CSN, HIGH);
+        return not(value bitand 0x01);
+    }
+    // for debugging purposes only
+    void print_data(const receiver_output &_receiverData)
+    {
+        Serial.print(_receiverData.throttle);
+        Serial.print(' ');
+        Serial.print(_receiverData.roll);
+        Serial.print(' ');
+        Serial.print(_receiverData.pitch);
+        Serial.print(' ');
+        Serial.print(_receiverData.yaw);
+        Serial.print(' ');
+        Serial.print(_receiverData.camera);
+        Serial.print(' ');
+        Serial.print(_receiverData.autopilot);
+        Serial.print(' ');
+        Serial.print(_receiverData.ON);
+        Serial.println();
     }
 };
 nRF24L01 receiver;
