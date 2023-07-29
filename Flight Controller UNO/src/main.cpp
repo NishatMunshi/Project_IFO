@@ -9,6 +9,7 @@
 #define __CALIBRATE__
 #endif
 
+constexpr byte HALT_LED = 8;
 constexpr uint32_t REFRESH_RATE = 2008; // the minimum we can go because reading micros() timer takes 4 us
 
 receiver_output receiverData;
@@ -23,6 +24,29 @@ uint16_t motorPW[4] = {1000u, 1000u, 1000u, 1000u}; // final motor pulse widths
 
 uint32_t loop_timer, elapsed_time; // two timers to take care of the timing and refresh rate
 
+void halt(void)
+{
+repeat:
+    // wait until we receive a valid data packet
+    while (not receiver.ready())
+        ;
+    receiver.read_rx_payload(receiverData);
+
+    // Serial.print("HALTED ");
+    // receiver.print_data(receiverData);
+
+    // turn motors back ON if start condition is met
+    if (receiverData.throttle < 1020 and receiverData.yaw < -980 and receiverData.ON)
+    {
+        // again wait until data is ready in the receiver before entering loop function
+        while (not receiver.ready())
+            ;
+        // turn off the halt LED to show that we're leaving halt
+        digitalWrite(HALT_LED, LOW);
+        return;
+    }
+    goto repeat;
+}
 void setup()
 {
 #ifdef __CALIBRATE__
@@ -31,6 +55,8 @@ void setup()
 #else
     // remove later section
     Serial.begin(9600);
+
+    pinMode(HALT_LED, OUTPUT);
 
     // set up the radio receiver with the correct settings.
     receiver.setup();
@@ -51,35 +77,9 @@ void setup()
     PID.reset();
 
     // wait for a special stick sequence before starting the motors
-    do
-    {
-        // wait until we receive a valid data packet
-        while (not receiver.ready())
-            ;
-        receiver.read_rx_payload(receiverData);
-        // Serial.print("OFF ");
-        // receiver.print_data(receiverData);
-    } while (not(receiverData.throttle < 1020 and receiverData.yaw < -980 and receiverData.ON));
-    // again wait until data is ready in the receiver before entering loop function
-    while (not receiver.ready())
-        ;
+    digitalWrite(HALT_LED, HIGH); // indicates we are entering halt
+    halt();
 #endif
-}
-void halt(void)
-{
-repeat:
-    // wait until we receive a valid data packet
-    while (not receiver.ready())
-        ;
-    receiver.read_rx_payload(receiverData);
-
-    // Serial.print("HALTED ");
-    // receiver.print_data(receiverData);
-
-    // turn motors back ON if start condition is met
-    if (receiverData.throttle < 1020 and receiverData.yaw < -980 and receiverData.ON)
-        return;
-    goto repeat;
 }
 void loop()
 {
@@ -133,10 +133,9 @@ void loop()
     // turn off and turn back on routine
     if (receiverData.throttle < 1020 and receiverData.yaw > 980 and not receiverData.ON)
     {
+        digitalWrite(HALT_LED, HIGH); // indicates we are entering halt
         halt();
-        // when we return from halt, make sure data is ready in the receiver
-        while (not receiver.ready())
-            ;
     }
+
 #endif
 }
