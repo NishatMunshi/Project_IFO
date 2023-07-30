@@ -9,7 +9,7 @@
 #define __CALIBRATE__
 #endif
 
-constexpr byte HALT_LED = 8;
+constexpr byte HALT_LED = 2;
 constexpr uint32_t REFRESH_RATE = 2008; // the minimum we can go because reading micros() timer takes 4 us
 
 receiver_output receiverData;

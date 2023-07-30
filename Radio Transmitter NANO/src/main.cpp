@@ -2,7 +2,7 @@
 #include <SPI.h>
 
 // global variables
-constexpr uint8_t CSN = 10, CE = 9, AUTOPILOT_INPUT = 8, ON_INPUT = 7; // this way pins 9 through 13 are used for SPI communication with the radio transmitter
+constexpr uint8_t CSN = 10, CE = 9, AUTOPILOT_INPUT = 3, ON_INPUT = 2; // this way pins 9 through 13 are used for SPI communication with the radio transmitter
 constexpr uint8_t PAYLOAD_LENGTH = 12;
 int16_t throttle, roll, pitch, yaw, camera, autopilot = 0, ON;
 uint8_t array[PAYLOAD_LENGTH];
@@ -154,8 +154,8 @@ void loop()
 	pitch = analogRead(A2);
 	yaw = analogRead(A3);
 	camera = analogRead(A4);
-	autopilot = (PINB bitand 0b00000001); // digitalRead(8)
-	ON = (PIND bitand 0b10000000);		  // digitalRead(7);
+	autopilot = (PIND bitand 0b00001000); // digitalRead(3)
+	ON = (PIND bitand 0b00000100);		  // digitalRead(2);
 	// -------------------------------------- 564 microseconds
 
 	// map the values into pulsewidth,
