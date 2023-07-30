@@ -77,6 +77,7 @@ public:
         _motorPW[2] = throttle_output + PID_output.roll + PID_output.pitch - PID_output.yaw;
         _motorPW[3] = throttle_output - PID_output.roll + PID_output.pitch + PID_output.yaw;
 
+        // limit the motorPWs in the range [1000, 2000]
         for (unsigned i = 0; i < 4; ++i)
         {
             if (_motorPW[i] < 1000)

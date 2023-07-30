@@ -149,13 +149,13 @@ public:
 
     inline void read_rx_payload(receiver_output &_receiverData)
     {
-        PORTB and_eq 0b11111011;
+        PORTB and_eq 0b11111011; // digitalWrite(CSN, LOW);
         SPI.transfer(SPI_Commands::R_RX_PAYLOAD);
         for (unsigned i = 0; i < PAYLOAD_LENGTH; ++i)
         {
             array[i] = SPI.transfer(SPI_Commands::NOP);
         }
-        PORTB or_eq 0b00000100;
+        PORTB or_eq 0b00000100; // digitalWrite(CSN, HIGH);
 
         // decompose the array into 6 channels and save it
         // throttle, roll, pitch, yaw, camera, autopilot, ON
@@ -184,12 +184,12 @@ public:
     }
 
     // true when receive fifo is not empty
-    bool ready(void) const
+    inline bool data_ready(void) const
     {
-        digitalWrite(CSN, LOW);
+        PORTB and_eq 0b11111011; // digitalWrite(CSN, LOW);
         SPI.transfer(R_REGISTER bitor FIFO_STATUS);
         byte value = SPI.transfer(NOP);
-        digitalWrite(CSN, HIGH);
+        PORTB or_eq 0b00000100; // digitalWrite(CSN, HIGH);
         return not(value bitand 0x01);
     }
     // for debugging purposes only

@@ -143,9 +143,9 @@ void loop()
 	// timer_i = micros();
 
 	// resuse last transmitted data packet until I do the calculations
-	PORTB and_eq 0b11111011;
+	PORTB and_eq 0b11111011; //digitalWrite(CSN, LOW);
 	SPI.transfer(SPI_Commands::REUSE_TX_PL);
-	PORTB or_eq 0b00000100;
+	PORTB or_eq 0b00000100;//digitalWrite(CSN, HIGH);
 	// --------------------------------------- 4 microseconds
 
 	// read analog values
@@ -168,9 +168,10 @@ void loop()
 
 	// process the data into 11 byte array
 	// throttle, roll, pitch, yaw, camera, autopilot
-	// array[0] = autopilot
-	// array[1] = camera least significant byte
-	// array[2] = camera most significant byte
+	// array[0] = ON
+	// array[1] = autopilot
+	// array[2] = camera least significant byte
+	// array[3] = camera most significant byte
 	array[11] = throttle >> 8;
 	array[10] = throttle bitand 0x00ff;
 	array[9] = roll >> 8;
@@ -192,7 +193,7 @@ void loop()
 	// PORTB or_eq 0b00000100;
 
 	// w_tx_payload with the processed data
-	PORTB and_eq 0b11111011;
+	PORTB and_eq 0b11111011;  //digitalWrite(CSN, LOW);
 	SPI.transfer(SPI_Commands::W_TX_PAYLOAD);
 	for (unsigned i = 0; i < PAYLOAD_LENGTH; ++i)
 	{
@@ -200,8 +201,7 @@ void loop()
 		// Serial.print(array[i]);
 		// Serial.print(' ');
 	}
-	// digitalWrite(CSN, HIGH);
-	PORTB or_eq 0b00000100;
+	PORTB or_eq 0b00000100;  //digitalWrite(CSN, HIGH);
 	// Serial.println();
 	// -------------------------------- 36 microseconds
 

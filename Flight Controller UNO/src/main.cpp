@@ -24,11 +24,11 @@ uint16_t motorPW[4] = {1000u, 1000u, 1000u, 1000u}; // final motor pulse widths
 
 uint32_t loop_timer, elapsed_time; // two timers to take care of the timing and refresh rate
 
-void halt(void)
+inline void halt(void)
 {
 repeat:
     // wait until we receive a valid data packet
-    while (not receiver.ready())
+    while (not receiver.data_ready())
         ;
     receiver.read_rx_payload(receiverData);
 
@@ -39,10 +39,10 @@ repeat:
     if (receiverData.throttle < 1020 and receiverData.yaw < -980 and receiverData.ON)
     {
         // again wait until data is ready in the receiver before entering loop function
-        while (not receiver.ready())
+        while (not receiver.data_ready())
             ;
         // turn off the halt LED to show that we're leaving halt
-        digitalWrite(HALT_LED, LOW);
+        PORTD and_eq 0b00000100; // digitalWrite(HALT_LED, LOW);
         return;
     }
     goto repeat;
@@ -87,8 +87,8 @@ void loop()
     // this loop ensures a steady refresh rate
     for (elapsed_time = 0; elapsed_time < REFRESH_RATE; elapsed_time = micros() - loop_timer) // corresponding to the refresh rate of the flight controller; subject to
     {                                                                                         // change according to the performance needs.
-        __asm__ __volatile__("nop\n\t");                                                      // do nothing in the refresh period, nop is used to remove compiler
-                                                                                              // optimisation
+      // __asm__ __volatile__("nop\n\t");                                                      // do nothing in the refresh period, nop is used to remove compiler
+      // optimisation
     }
 
     PORTD or_eq 0b11110000; // pull the pins that execute PWM high
@@ -133,7 +133,8 @@ void loop()
     // turn off and turn back on routine
     if (receiverData.throttle < 1020 and receiverData.yaw > 980 and not receiverData.ON)
     {
-        digitalWrite(HALT_LED, HIGH); // indicates we are entering halt
+        // indicates we are entering halt
+        PORTD or_eq 0b00000100;// digitalWrite(HALT_LED, HIGH); 
         halt();
     }
 
