@@ -5,7 +5,7 @@
 constexpr uint8_t CSN = 10, CE = 9, AUTOPILOT_INPUT = 3, ON_INPUT = 2; // this way pins 9 through 13 are used for SPI communication with the radio transmitter
 constexpr uint8_t PAYLOAD_LENGTH = 12;
 int16_t throttle, roll, pitch, yaw, camera, autopilot = 0, ON;
-uint8_t array[PAYLOAD_LENGTH];
+uint8_t transmitArray[PAYLOAD_LENGTH];
 
 enum Registers : uint8_t
 {
@@ -85,6 +85,8 @@ void read_from_register(const byte _registerAddress, const unsigned _numberOfByt
 	digitalWrite(CSN, HIGH);
 }
 
+
+// using time consuming function calls is okay in setup
 void setup()
 {
 	// begin the objects
@@ -138,6 +140,8 @@ void setup()
 	// CE high
 	digitalWrite(CE, HIGH);
 }
+
+// loop needs to be as fast as possible, so no unnecessary function calls
 void loop()
 {
 	// timer_i = micros();
@@ -163,29 +167,30 @@ void loop()
 	roll = roll * 1.95503421309873 - 1000;
 	pitch = pitch * 1.95503421309873 - 1000;
 	yaw = yaw * 1.95503421309873 - 1000;
-	// camera = camera * 1.95503421309873 - 1000; // 1500 us pulse is the centre position of a servo.
+	camera = camera * 1.95503421309873 - 1000; // 1500 us pulse is the centre position of a servo.
 	// -------------------------------------- 120 microseconds
 
-	// process the data into 11 byte array
+	// process the data into 12 byte transmitArray
 	// throttle, roll, pitch, yaw, camera, autopilot
-	// array[0] = ON
-	// array[1] = autopilot
-	// array[2] = camera least significant byte
-	// array[3] = camera most significant byte
-	array[11] = throttle >> 8;
-	array[10] = throttle bitand 0x00ff;
-	array[9] = roll >> 8;
-	array[8] = roll bitand 0x00ff;
-	array[7] = pitch >> 8;
-	array[6] = pitch bitand 0x00ff;
-	array[5] = yaw >> 8;
-	array[4] = yaw bitand 0x00ff;
-	array[3] = camera >> 8;
-	array[2] = camera bitand 0x00ff;
-	array[1] = autopilot;
-	array[0] = ON;
+	// transmitArray[0] = ON
+	// transmitArray[1] = autopilot
+	// transmitArray[2] = camera least significant byte
+	// transmitArray[3] = camera most significant byte
+	transmitArray[11] = throttle >> 8;
+	transmitArray[10] = throttle bitand 0x00ff;
+	transmitArray[9] = roll >> 8;
+	transmitArray[8] = roll bitand 0x00ff;
+	transmitArray[7] = pitch >> 8;
+	transmitArray[6] = pitch bitand 0x00ff;
+	transmitArray[5] = yaw >> 8;
+	transmitArray[4] = yaw bitand 0x00ff;
+	transmitArray[3] = camera >> 8;
+	transmitArray[2] = camera bitand 0x00ff;
+	transmitArray[1] = autopilot;
+	transmitArray[0] = ON;
 	// -------------------------------- < 4 microseconds
 
+	// DEBUG CODE
 	// PORTB and_eq 0b11111011;
 	// SPI.transfer(SPI_Commands::R_REGISTER bitor FIFO_STATUS);
 	// byte value = SPI.transfer(NOP);
@@ -197,8 +202,8 @@ void loop()
 	SPI.transfer(SPI_Commands::W_TX_PAYLOAD);
 	for (unsigned i = 0; i < PAYLOAD_LENGTH; ++i)
 	{
-		SPI.transfer(array[i]);
-		// Serial.print(array[i]);
+		SPI.transfer(transmitArray[i]);
+		// Serial.print(transmitArray[i]);
 		// Serial.print(' ');
 	}
 	PORTB or_eq 0b00000100;  //digitalWrite(CSN, HIGH);
